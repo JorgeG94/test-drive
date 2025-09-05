@@ -579,11 +579,15 @@ contains
         label = "PASSED"
       end if
     end if
+
     output = "       " // color%dim//"..."//color%reset // " " // &
       & color%blue//test%name//color%reset // &
       & " "//color%bold//"["//label_color//label//color%bold//"]"//color%reset
+
     if (present(error)) then
+#ifndef CRAYFTN_
       output = output // newline // "  "//color%bold//"Message:"//color%reset//" " // error%message
+#endif
     end if
   end subroutine make_output
 
