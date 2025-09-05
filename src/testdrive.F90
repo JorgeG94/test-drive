@@ -585,7 +585,7 @@ contains
       & " "//color%bold//"["//label_color//label//color%bold//"]"//color%reset
 
     if (present(error)) then
-#ifndef CRAYFTN_
+#ifndef _CRAYFTN
       output = output // newline // "  "//color%bold//"Message:"//color%reset//" " // error%message
 #endif
     end if
