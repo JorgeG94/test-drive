@@ -425,7 +425,6 @@ contains
     type(unittest_type), allocatable :: testsuite(:)
     integer :: it
     logical :: parallel_
-    character(len=:), allocatable :: part1, part2, part3, part4
 
     parallel_ = .true.
     if(present(parallel)) parallel_ = parallel
@@ -433,16 +432,24 @@ contains
     call collect(testsuite)
 
     call junit_push_suite(junit, "testdrive")
+
     !$omp parallel do schedule(dynamic) shared(testsuite, unit) reduction(+:stat) &
     !$omp if (parallel_)
     do it = 1, size(testsuite)
       !$omp critical(testdrive_testsuite)
-      part1 = "Starting"
-      part2 = color%blue // testsuite(it)%name // color%reset
-      part3 = color%dim // "..." // color%reset
-      part4 = color%bold // "(" // color%cyan // to_string(it) // color%bold // &
-              "/" // color%cyan // to_string(size(testsuite)) // color%bold // ")" // color%reset
-      write(unit, '(1x, 4(1x, a))') part1, part2, part3, part4
+#ifndef _CRAYFTN
+      write(unit, '(1x, 4(1x, a))') &
+        & "Starting", (color%blue)//testsuite(it)%name//color%reset, &
+        & color%dim//"..."//color%reset, &
+        & color%bold//"(" // color%cyan//to_string(it)//color%bold // &
+        & "/" // color%cyan//to_string(size(testsuite))//color%bold // ")"//color%reset
+#else
+            write(unit, '(1x, 4(1x, a))') &
+        & "Starting", testsuite(it)%name, &
+        & "...", &
+        & "(" // to_string(it) // &
+        & "/" //to_string(size(testsuite)) // ")"
+#endif
       !$omp end critical(testdrive_testsuite)
       call run_unittest(testsuite(it), unit, stat, junit)
     end do
@@ -538,7 +545,11 @@ contains
 
     is_skipped = .false.
     if (present(error)) then
+#ifndef _CRAYFTN
       is_skipped = error%stat == skipped
+#else
+      is_skipped=.false.
+#endif
     end if
 
   end function test_skipped
@@ -579,14 +590,15 @@ contains
         label = "PASSED"
       end if
     end if
-
     output = "       " // color%dim//"..."//color%reset // " " // &
       & color%blue//test%name//color%reset // &
       & " "//color%bold//"["//label_color//label//color%bold//"]"//color%reset
-
     if (present(error)) then
 #ifndef _CRAYFTN
       output = output // newline // "  "//color%bold//"Message:"//color%reset//" " // error%message
+#else
+      output = output // newline // "  "//color%bold//"Message:"//color%reset//" " !// error%message
+
 #endif
     end if
   end subroutine make_output
@@ -2398,11 +2410,7 @@ contains
     !> Concatenated string
     character(len=:), allocatable :: str
   
-    if (code%style == -1_i1 .and. code%bg == -1_i1 .and. code%fg == -1_i1) then
-      str = lval  ! Return string without color codes
-    else
-      str = lval // escape_color(code)
-    end if
+    str = lval // escape_color(code)
   end function concat_color_left
   
   !> Concatenate an escape code with a string and turn it into an actual escape sequence
@@ -2414,11 +2422,7 @@ contains
     !> Concatenated string
     character(len=:), allocatable :: str
   
-    if (code%style == -1_i1 .and. code%bg == -1_i1 .and. code%fg == -1_i1) then
-      str = rval  ! Return string without color codes
-    else
-      str = rval // escape_color(code)
-    end if
+    str = escape_color(code) // rval
   end function concat_color_right
   
   !> Transform a color code into an actual ANSI escape sequence
