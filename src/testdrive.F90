@@ -285,7 +285,7 @@ module testdrive
   abstract interface
     !> Collect all tests
     subroutine collect_interface(testsuite)
-      import :: unittest_type
+      import :: unittest_type, test_interface
 
       !> Collection of tests
       type(unittest_type), allocatable, intent(out) :: testsuite(:)
